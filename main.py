@@ -45,7 +45,7 @@ pylab.plot(x[:,0],x[:,1])
 pylab.xlabel('$x$')
 pylab.ylabel('$y$')
 pylab.axes().set_aspect('equal','datalim')
-pylab.savefig('xy.png',dpi=200
+pylab.savefig('xy.png',dpi=200)
 pylab.close()
 
 pylab.plot(t,np.sqrt(x[:,0]*x[:,0]+x[:,1]*x[:,1]))
