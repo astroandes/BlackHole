@@ -1,38 +1,38 @@
 import numpy as np,sympy as sp, pylab
 from scipy.special import erf
 from scipy.integrate import odeint as integrate
+## Units
+# Mass:     10**6 Solar Masses
+# Distance: Parsecs
+# Time:     10**6 Years
 
-# Declares some global constants
-N = 3 # Number of dimensions
-G = 1.0 # Gravitational constant
-n_iter = 50000 # Number of iterations
-m = 1.0 # BH mass
-R = 1.0 # BH radius
+## General Constants
 
-# Constants for the gravitational potential
-rho_0 = 1.0
+N = 3                   # Number of dimensions
+G = 4490.0              # Gravitational constant
+n_iter = 50000          # Number of iterations
 
-# Constants for the DM friction force
-lnLambda= 1.0
-M_tot = 0.01
-rho = 1.0
-sigma = 1.0
-K = 4.0*np.pi*G*G*lnLambda*rho*M_tot
+## System Constants
 
-# Initial conditions
-s_0 = np.array([1,0,0,-2,-2,0]) #[x,y,z,v_x,v_y,v_z]
+lnLamb = 1.0            # Coulomb logarithm
+sigma = 76.65           # Velocity dispersion
+M = 3.0                 # BlackHole mass
+M_tot = 2.0*M           # Total mass
+R = G*M/(sigma*sigma)   # BlackHole radius
+K = 4.0*np.pi*G*G*lnLamb*M_tot
 
-t = np.linspace(0,1000.0,n_iter)
+## Density and Mass function for the gas as numpy functions
 
-# Defines a mass distribution for the gas
-def M(x,y,z):
-    r= np.sqrt(x*x+y*y+z*z)
-    return 2.0*sigma*sigma*r*(1.0-R/r*np.arctan(r/R))/G
+def M(r):
+    return 2.0*sigma*sigma*(r-R*np.arctan(r/R))/G
+
+def rho(r):
+    return sigma*sigma/(2.0*np.pi*G*(r*r+R*R))
 
 # Defines a provisional potential
 def phi(x,y,z):
     #   return 2.0*np.pi*G*rho_0*sp.log(x*x+y*y+z*z)
-    return -G*m/sp.sqrt(x*x+y*y+z*z)
+    return -G/sp.sqrt(x*x+y*y+z*z)
 
 # Calculates gradient of an arbitrary potential using sympy
 def getForce(Potential):
@@ -51,31 +51,31 @@ Fx,Fy,Fz = getForce(phi)
 # Defines the time derivative of s: [v_x,v_y,v_z,a_x,a_y,a_z]
 def f(s,t):
     x,y,z = s[:N]
+    r = np.sqrt(x*x+y*y+z*z)
     v = s[N:]
     V = np.sqrt(np.sum(v*v))
     b = V/(np.sqrt(2.0)*sigma)
-    fx,fy,fz = -K*v*(erf(b)-2.0*b*np.exp(-0.5*b)/np.sqrt(np.pi))/(V*V*V)
-    return np.array([v[0],v[1],v[2],(M(x,y,z)*Fx(x,y,z)+fx)/m,(M(x,y,z)*Fy(x,y,z)+fy)/m,(M(x,y,z)*Fz(x,y,z)+fz)/m])
+    fx,fy,fz = -K*rho(r)*v*(erf(b)-2.0*b*np.exp(-0.5*b)/np.sqrt(np.pi))/(V*V*V)
+    return np.array([v[0],v[1],v[2],(M(r)*Fx(x,y,z)+fx),(M(r)*Fy(x,y,z)+fy),(M(r)*Fz(x,y,z)+fz)])
 
-s = integrate(f,s_0,t)
 
-x,v = s[:,:N],s[:,N:]
+# Initial conditions
+vlct = np.array([200,300,400])*1.022
+t = np.linspace(0,1000.0,n_iter)
+for vel in vlct:
+    print vel
+    s_0 = np.array([1,0,0,0,0,vel]) #[x,y,z,v_x,v_y,v_z]
+    s = integrate(f,s_0,t)
+    #E = 0.5*m*np.sum(v*v,axis=1)+2.0*np.pi*G*rho_0*np.log(x[:,0]*x[:,0]+x[:,1]*x[:,1]+x[:,2]*x[:,2])
+    x,v = s[:,:N],s[:,N:]
+    pylab.plot(t*1E6,np.sqrt(x[:,0]*x[:,0]+x[:,1]*x[:,1]+x[:,2]*x[:,2]),label='$\mathrm{'+str(vel)+'\ Pc/Myr}$')
 
-#E = 0.5*m*np.sum(v*v,axis=1)+2.0*np.pi*G*rho_0*np.log(x[:,0]*x[:,0]+x[:,1]*x[:,1]+x[:,2]*x[:,2])
-#print E
-'''
-pylab.plot(x[:,0],x[:,1])
-pylab.xlabel('$x$')
-pylab.ylabel('$y$')
-pylab.axes().set_aspect('equal','datalim')
-pylab.savefig('xy.png',dpi=200)
-pylab.close()
-'''
-pylab.plot(t,np.sqrt(x[:,0]*x[:,0]+x[:,1]*x[:,1]))
-pylab.xlabel('$t$',fontsize=16)
-pylab.ylabel('$r=\sqrt{x^{2}+y^{2}+z^{2}}$',fontsize=16)
+pylab.legend(loc=2)
+pylab.xlabel('$\mathrm{Time\ (Years)}$',fontsize=16)
+pylab.ylabel('$\mathrm{Radial\ Distance\ (Pc)}$',fontsize=16)
 pylab.xscale('log')
 pylab.yscale('log')
-pylab.ylim([1,100])
+pylab.ylim(ymin=3)
+pylab.xlim(xmin=2E4)
 pylab.savefig('r.png',dpi=200)
 pylab.close()
