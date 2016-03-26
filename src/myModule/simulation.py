@@ -1,9 +1,10 @@
 import numpy as np
 
 class interaction:
-    def __init__(self, name, acceleration, **constants):
+    def __init__(self, name, acceleration, parameters):
         self.name = name
-        self.acceleration = lambda r, v, m: acceleration(r, v, m, **constants)
+        self.acceleration = lambda r, v, m: acceleration(r, v, m, parameters)
+        self.parameters = parameters
 
 class simulation:
     def __init__(self):

@@ -1,6 +1,10 @@
 import numpy as np
 
-def acceleration(r, v, m, G = 1, M = lambda dr_norm: 1, R = np.zeros(3)):
+def acceleration(r, v, m, parameters):
+    G, M, R = parameters
     dr = R - r
     dr_norm = np.sum(dr*dr)**.5
-    return G*M(dr_norm)*dr/dr_norm**3
+    accel = G*M(dr_norm)*dr/dr_norm**3
+    m_dot = np.zeros(1)
+    veloc = np.zeros(3)
+    return np.concatenate((veloc,accel,m_dot))
